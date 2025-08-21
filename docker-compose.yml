@@ -1,0 +1,69 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: workflow-builder-db
+    environment:
+      POSTGRES_DB: workflow_builder_db
+      POSTGRES_USER: workflow_builder_user
+      POSTGRES_PASSWORD: workflow_builder_password
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    networks:
+      - workflow-builder-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cloud_cost_user -d cloud_cost_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend API (NestJS)
+  backend:
+    build:
+      context: ../workflow-builder-api
+      dockerfile: Dockerfile
+    container_name: workflow-builder-api
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - DATABASE_HOST=postgres
+      - DATABASE_PORT=5433
+      - DATABASE_USER=workflow_builder_user
+      - DATABASE_PASS=workflow_builder_password
+      - DATABASE_NAME=workflow_builder_db
+    ports:
+      - "3001:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - workflow-builder-network
+    restart: unless-stopped
+
+  # Frontend (React + Vite)
+  frontend:
+    build:
+      context: ../workflow-builder-site
+      dockerfile: Dockerfile
+    container_name: workflow-builder-frontend
+    environment:
+      - VITE_API_URL=http://localhost:3001
+    ports:
+      - "8080:8000"
+    depends_on:
+      - backend
+    networks:
+      - workflow-builder-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+
+networks:
+  workflow-builder-network:
+    driver: bridge
