@@ -1,14 +1,11 @@
-version: '3.8'
-
 services:
-  # PostgreSQL Database
   postgres:
     image: postgres:15-alpine
     container_name: workflow-builder-db
     environment:
-      POSTGRES_DB: workflow_builder_db
-      POSTGRES_USER: workflow_builder_user
-      POSTGRES_PASSWORD: workflow_builder_password
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
       - "5433:5432"
     volumes:
@@ -17,27 +14,29 @@ services:
     networks:
       - workflow-builder-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U cloud_cost_user -d cloud_cost_db"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
       timeout: 5s
       retries: 5
 
-  # Backend API (NestJS)
   backend:
     build:
       context: ../workflow-builder-api
       dockerfile: Dockerfile
     container_name: workflow-builder-api
     environment:
-      - NODE_ENV=production
-      - PORT=3001
-      - DATABASE_HOST=postgres
-      - DATABASE_PORT=5433
-      - DATABASE_USER=workflow_builder_user
-      - DATABASE_PASS=workflow_builder_password
-      - DATABASE_NAME=workflow_builder_db
+      NODE_ENV: ${NODE_ENV}
+      PORT: ${BACKEND_PORT}
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5433
+      DATABASE_USER: ${POSTGRES_USER}
+      DATABASE_PASS: ${POSTGRES_PASSWORD}
+      DATABASE_NAME: ${POSTGRES_DB}
     ports:
-      - "3001:3000"
+      - "${BACKEND_PORT}:3001"
+    volumes:
+      - ../workflow-builder-api:/app
+      - /app/node_modules
     depends_on:
       postgres:
         condition: service_healthy
@@ -45,16 +44,18 @@ services:
       - workflow-builder-network
     restart: unless-stopped
 
-  # Frontend (React + Vite)
   frontend:
     build:
       context: ../workflow-builder-site
       dockerfile: Dockerfile
     container_name: workflow-builder-frontend
     environment:
-      - VITE_API_URL=http://localhost:3001
+      VITE_API_URL: ${VITE_API_URL}
     ports:
-      - "8080:8000"
+      - "${FRONTEND_PORT}:5173"
+    volumes:
+      - ../workflow-builder-site:/app
+      - /app/node_modules
     depends_on:
       - backend
     networks:

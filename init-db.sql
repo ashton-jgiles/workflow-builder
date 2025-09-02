@@ -21,5 +21,5 @@ ON CONFLICT (email) DO NOTHING;
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 
 -- Grant necessary permissions
-GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO cloud_cost_user;
-GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO cloud_cost_user;
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO "workflow-user";
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO "workflow-user";
