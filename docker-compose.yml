@@ -26,9 +26,9 @@ services:
     container_name: workflow-builder-api
     environment:
       NODE_ENV: ${NODE_ENV}
-      PORT: ${BACKEND_PORT}
+      PORT: 3001
       DATABASE_HOST: postgres
-      DATABASE_PORT: 5433
+      DATABASE_PORT: 5432
       DATABASE_USER: ${POSTGRES_USER}
       DATABASE_PASS: ${POSTGRES_PASSWORD}
       DATABASE_NAME: ${POSTGRES_DB}
